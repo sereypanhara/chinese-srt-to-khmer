@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chinese SRT → Khmer SRT</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+.container {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+}
+
+h1 {
+    text-align: center;
+}
+
+textarea {
+    width: 100%;
+    min-height: 300px;
+    margin-top: 15px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 12px 20px;
+    margin: 10px 5px 10px 0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#translateBtn {
+    background: #222;
+    color: white;
+}
+
+#downloadBtn {
+    background: #16803c;
+    color: white;
+}
+
+#status {
+    margin-top: 15px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Chinese SRT → Khmer SRT</h1>
+
+<p>
+បញ្ចូល SRT ភាសាចិនរបស់អ្នក។<br>
+កម្មវិធីនឹងរក្សា Start Time ដើម។
+</p>
+
+<input type="file" id="srtFile" accept=".srt">
+
+<textarea id="inputText"
+placeholder="ឬ Paste Chinese SRT នៅទីនេះ..."></textarea>
+
+<button id="translateBtn">
+ចាប់ផ្តើមបកប្រែ
+</button>
+
+<button id="downloadBtn" disabled>
+Download Khmer SRT
+</button>
+
+<div id="status"></div>
+
+<textarea id="outputText"
+placeholder="Khmer SRT នឹងបង្ហាញនៅទីនេះ..."
+readonly></textarea>
+
+</div>
+
+<script>
+
+let translatedSRT = "";
+
+document.getElementById("srtFile").addEventListener("change", function(e) {
+
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+        document.getElementById("inputText").value = event.target.result;
+    };
+
+    reader.readAsText(file, "UTF-8");
+});
+
+
+document.getElementById("translateBtn").addEventListener("click", async function() {
+
+    const input = document.getElementById("inputText").value.trim();
+
+    if (!input) {
+        alert("សូម Upload ឬ Paste SRT ជាមុនសិន។");
+        return;
+    }
+
+    document.getElementById("status").textContent =
+        "កំពុងរៀបចំ SRT...";
+
+    /*
+      ជំហាននេះបច្ចុប្បន្នធ្វើការរៀបចំ SRT
+      មិនទាន់ភ្ជាប់ AI Translation API ទេ។
+      
+      យើងនឹងភ្ជាប់សេវាបកប្រែ Free
+      នៅជំហានបន្ទាប់។
+    */
+
+    translatedSRT = input;
+
+    document.getElementById("outputText").value =
+        translatedSRT;
+
+    document.getElementById("downloadBtn").disabled = false;
+
+    document.getElementById("status").textContent =
+        "SRT ត្រូវបានទទួលរួច។ កំពុងរង់ចាំភ្ជាប់ប្រព័ន្ធបកប្រែ AI។";
+});
+
+
+document.getElementById("downloadBtn").addEventListener("click", function() {
+
+    if (!translatedSRT) return;
+
+    const blob = new Blob(
+        [translatedSRT],
+        { type: "text/plain;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "khmer-translated.srt";
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+});
+
+</script>
+
+</body>
+</html>
