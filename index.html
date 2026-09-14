@@ -1,164 +1,216 @@
 <!DOCTYPE html>
 <html lang="km">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chinese SRT → Khmer SRT</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chinese SRT → Khmer SRT</title>
 
-<style>
-body {
-    font-family: Arial, sans-serif;
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
-    background: #f5f5f5;
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
 
-.container {
-    background: white;
-    padding: 25px;
-    border-radius: 15px;
-}
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
 
-h1 {
-    text-align: center;
-}
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
 
-textarea {
-    width: 100%;
-    min-height: 300px;
-    margin-top: 15px;
-    box-sizing: border-box;
-}
+    .description {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
 
-button {
-    padding: 12px 20px;
-    margin: 10px 5px 10px 0;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-}
+    input[type="file"] {
+      width: 100%;
+      margin-bottom: 15px;
+    }
 
-#translateBtn {
-    background: #222;
-    color: white;
-}
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 15px;
+      resize: vertical;
+    }
 
-#downloadBtn {
-    background: #16803c;
-    color: white;
-}
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #222;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
 
-#status {
-    margin-top: 15px;
-    font-weight: bold;
-}
-</style>
+    button:disabled {
+      opacity: 0.6;
+    }
+
+    #status {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>Chinese SRT → Khmer SRT</h1>
+  <h1>Chinese SRT → Khmer SRT</h1>
 
-<p>
-បញ្ចូល SRT ភាសាចិនរបស់អ្នក។<br>
-កម្មវិធីនឹងរក្សា Start Time ដើម។
-</p>
+  <div class="description">
+    បកប្រែ Chinese SRT ទៅជាភាសាខ្មែរ
+  </div>
 
-<input type="file" id="srtFile" accept=".srt">
+  <input type="file" id="srtFile" accept=".srt">
 
-<textarea id="inputText"
-placeholder="ឬ Paste Chinese SRT នៅទីនេះ..."></textarea>
+  <textarea id="srtInput" placeholder="ឬ Paste SRT នៅទីនេះ..."></textarea>
 
-<button id="translateBtn">
-ចាប់ផ្តើមបកប្រែ
-</button>
+  <button id="translateBtn">
+    ចាប់ផ្តើមបកប្រែ
+  </button>
 
-<button id="downloadBtn" disabled>
-Download Khmer SRT
-</button>
+  <div id="status"></div>
 
-<div id="status"></div>
+  <textarea id="srtOutput"
+    placeholder="លទ្ធផល Khmer SRT នឹងបង្ហាញនៅទីនេះ..."
+    readonly></textarea>
 
-<textarea id="outputText"
-placeholder="Khmer SRT នឹងបង្ហាញនៅទីនេះ..."
-readonly></textarea>
+  <button id="downloadBtn" style="display:none;">
+    ទាញយក Khmer SRT
+  </button>
 
 </div>
 
 <script>
 
-let translatedSRT = "";
+const API_URL = "https://script.google.com/macros/s/AKfycbw1X9L2yGiDw95RmRD1mMMT1W9kNzpwdPu94yoWE6CdZhdnE7wOXvm7gWTtcNWH-zzV/exec";
 
-document.getElementById("srtFile").addEventListener("change", function(e) {
+const fileInput = document.getElementById("srtFile");
+const input = document.getElementById("srtInput");
+const output = document.getElementById("srtOutput");
+const translateBtn = document.getElementById("translateBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const status = document.getElementById("status");
 
-    const file = e.target.files[0];
+fileInput.addEventListener("change", function() {
 
-    if (!file) return;
+  const file = fileInput.files[0];
 
-    const reader = new FileReader();
+  if (!file) return;
 
-    reader.onload = function(event) {
-        document.getElementById("inputText").value = event.target.result;
-    };
+  const reader = new FileReader();
 
-    reader.readAsText(file, "UTF-8");
+  reader.onload = function(e) {
+    input.value = e.target.result;
+  };
+
+  reader.readAsText(file, "UTF-8");
 });
 
 
-document.getElementById("translateBtn").addEventListener("click", async function() {
+translateBtn.addEventListener("click", async function() {
 
-    const input = document.getElementById("inputText").value.trim();
+  const text = input.value.trim();
 
-    if (!input) {
-        alert("សូម Upload ឬ Paste SRT ជាមុនសិន។");
-        return;
+  if (!text) {
+    status.textContent = "សូម Upload ឬ Paste SRT ជាមុនសិន។";
+    return;
+  }
+
+  translateBtn.disabled = true;
+  status.textContent = "កំពុងបកប្រែ... សូមរង់ចាំ";
+
+  try {
+
+    const response = await fetch(API_URL, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+
+      body: JSON.stringify({
+        text: text
+      })
+
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Translation failed");
     }
 
-    document.getElementById("status").textContent =
-        "កំពុងរៀបចំ SRT...";
+    output.value = data.srt;
 
-    /*
-      ជំហាននេះបច្ចុប្បន្នធ្វើការរៀបចំ SRT
-      មិនទាន់ភ្ជាប់ AI Translation API ទេ។
-      
-      យើងនឹងភ្ជាប់សេវាបកប្រែ Free
-      នៅជំហានបន្ទាប់។
-    */
+    downloadBtn.style.display = "block";
 
-    translatedSRT = input;
+    status.textContent = "បកប្រែរួចរាល់ ✅";
 
-    document.getElementById("outputText").value =
-        translatedSRT;
+  } catch (error) {
 
-    document.getElementById("downloadBtn").disabled = false;
+    console.error(error);
 
-    document.getElementById("status").textContent =
-        "SRT ត្រូវបានទទួលរួច។ កំពុងរង់ចាំភ្ជាប់ប្រព័ន្ធបកប្រែ AI។";
+    status.textContent =
+      "មានបញ្ហា: " + error.message;
+
+  } finally {
+
+    translateBtn.disabled = false;
+
+  }
+
 });
 
 
-document.getElementById("downloadBtn").addEventListener("click", function() {
+downloadBtn.addEventListener("click", function() {
 
-    if (!translatedSRT) return;
+  const blob = new Blob(
+    [output.value],
+    {
+      type: "text/plain;charset=utf-8"
+    }
+  );
 
-    const blob = new Blob(
-        [translatedSRT],
-        { type: "text/plain;charset=utf-8" }
-    );
+  const url = URL.createObjectURL(blob);
 
-    const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
 
-    const a = document.createElement("a");
+  a.href = url;
+  a.download = "khmer-translated.srt";
 
-    a.href = url;
-    a.download = "khmer-translated.srt";
+  document.body.appendChild(a);
 
-    a.click();
+  a.click();
 
-    URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+
 });
 
 </script>
